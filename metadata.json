@@ -1,0 +1,8 @@
+{
+  "name": "Malang Fest",
+  "description": "Mading digital untuk konser, pertunjukan, dan karya seni di Malang.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
