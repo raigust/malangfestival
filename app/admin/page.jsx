@@ -423,26 +423,35 @@ export default function AdminPage() {
         <a className="admin-side-brand" href="/"><span>MF</span><b>MALANG<br/>FEST</b></a>
         <div className="admin-side-title">RUANG<br/><i>KURATOR</i></div>
         <nav>
-          <button className={activeTab === "posters" ? "active" : ""} onClick={() => setActiveTab("posters")}>
+          <button className={activeTab === "posters" ? "active" : ""} onClick={() => setActiveTab("posters")} type="button">
             <Icon name="grid"/> Kelola Poster ({events.length})
           </button>
-          <button className={activeTab === "guide" ? "active" : ""} onClick={() => setActiveTab("guide")}>
+          <button className={activeTab === "guide" ? "active" : ""} onClick={() => setActiveTab("guide")} type="button">
             <Icon name="ruler"/> Panduan Ukuran & Bingkai
           </button>
-          <button className={activeTab === "content" ? "active" : ""} onClick={() => setActiveTab("content")}>
+          <button className={activeTab === "content" ? "active" : ""} onClick={() => setActiveTab("content")} type="button">
             <Icon name="text"/> Kelola Konten Web (CMS)
           </button>
-          <button className={activeTab === "stickers" ? "active" : ""} onClick={() => setActiveTab("stickers")}>
+          <button className={activeTab === "stickers" ? "active" : ""} onClick={() => setActiveTab("stickers")} type="button">
             <Icon name="tag"/> Moderasi Stiker ({allStickers.length})
           </button>
-          <button className={activeTab === "supabase" ? "active" : ""} onClick={() => setActiveTab("supabase")}>
+          <button className={activeTab === "supabase" ? "active" : ""} onClick={() => setActiveTab("supabase")} type="button">
             <Icon name="database"/> Supabase & Upstash
           </button>
         </nav>
         <div className="admin-account">
-          <span>{admin.displayName}</span>
-          <small>@{admin.username} · KURATOR UTAMA</small>
-          <button onClick={logout}><Icon name="logout" size={16}/> Keluar</button>
+          <div className="admin-account-info">
+            <div className="admin-account-avatar">
+              {admin.displayName ? admin.displayName.charAt(0).toUpperCase() : "A"}
+            </div>
+            <div className="admin-account-details">
+              <span>{admin.displayName}</span>
+              <small>@{admin.username} · KURATOR</small>
+            </div>
+          </div>
+          <button className="admin-logout-btn" onClick={logout} type="button" title="Keluar dari sesi admin">
+            <Icon name="logout" size={15}/> Keluar dari Dasbor
+          </button>
         </div>
       </aside>
 
