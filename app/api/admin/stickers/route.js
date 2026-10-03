@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store } from "@/lib/store";
+import { store, addSticker, ensureStoreLoaded } from "@/lib/store";
 
 export async function GET(request) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
+
+  await ensureStoreLoaded();
 
   const allStickers = [];
   store.events.forEach((ev) => {
@@ -64,8 +66,7 @@ export async function POST(request) {
       isCuratorBadge: true,
     };
 
-    if (!Array.isArray(event.stickers)) event.stickers = [];
-    event.stickers.unshift(sticker);
+    await addSticker(sticker);
     event.updatedAt = new Date().toISOString();
 
     return NextResponse.json(

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store, DEFAULT_SITE_CONTENT } from "@/lib/store";
+import { store, DEFAULT_SITE_CONTENT, saveContent, ensureStoreLoaded } from "@/lib/store";
 
 export async function GET(request) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
+
+  await ensureStoreLoaded();
 
   return NextResponse.json({
     success: true,
@@ -43,7 +45,7 @@ export async function PUT(request) {
       }
     });
 
-    store.siteContent = current;
+    await saveContent(current);
 
     return NextResponse.json({
       success: true,

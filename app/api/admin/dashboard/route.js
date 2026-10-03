@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store, PUBLIC_STATUSES } from "@/lib/store";
+import { store, PUBLIC_STATUSES, ensureStoreLoaded } from "@/lib/store";
 
 export async function GET(request) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
+
+  await ensureStoreLoaded();
 
   const now = new Date().getTime();
   const totalEvents = store.events.length;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store, EVENT_STATUSES, BORDER_STYLES, uniqueSlug } from "@/lib/store";
+import { store, EVENT_STATUSES, BORDER_STYLES, uniqueSlug, saveEvent, ensureStoreLoaded } from "@/lib/store";
 
 function has(body, key) {
   return Object.prototype.hasOwnProperty.call(body, key);
@@ -85,6 +85,8 @@ export async function GET(request) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
 
+  await ensureStoreLoaded();
+
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search");
   const status = searchParams.get("status");
@@ -133,7 +135,7 @@ export async function POST(request) {
     data.createdAt = new Date().toISOString();
     data.updatedAt = new Date().toISOString();
 
-    store.events.push(data);
+    await saveEvent(data);
 
     return NextResponse.json(
       {

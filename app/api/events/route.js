@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { store, PUBLIC_STATUSES } from "@/lib/store";
+import { store, PUBLIC_STATUSES, ensureStoreLoaded } from "@/lib/store";
 
 export async function GET(request) {
+  await ensureStoreLoaded();
+
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
   const borderStyle = searchParams.get("borderStyle");

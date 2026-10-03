@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store, EVENT_STATUSES, BORDER_STYLES, uniqueSlug } from "@/lib/store";
+import { store, EVENT_STATUSES, BORDER_STYLES, uniqueSlug, saveEvent, deleteEvent, ensureStoreLoaded } from "@/lib/store";
 
 function has(body, key) {
   return Object.prototype.hasOwnProperty.call(body, key);
@@ -102,7 +102,7 @@ export async function PUT(request, { params }) {
       ...updateData,
     };
 
-    store.events[existingIndex] = updated;
+    await saveEvent(updated);
 
     return NextResponse.json({
       success: true,
@@ -121,6 +121,8 @@ export async function DELETE(request, { params }) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
 
+  await ensureStoreLoaded();
+
   const id = Number(params.id);
   const index = store.events.findIndex((e) => e.id === id);
   if (index === -1) {
@@ -130,7 +132,7 @@ export async function DELETE(request, { params }) {
     );
   }
 
-  store.events.splice(index, 1);
+  await deleteEvent(id);
 
   return NextResponse.json({
     success: true,

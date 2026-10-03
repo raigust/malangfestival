@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store, uniqueSlug } from "@/lib/store";
+import { store, uniqueSlug, saveEvent, ensureStoreLoaded } from "@/lib/store";
 
 export async function POST(request, { params }) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
+
+  await ensureStoreLoaded();
 
   const id = Number(params.id);
   const source = store.events.find((e) => e.id === id);
@@ -29,7 +31,7 @@ export async function POST(request, { params }) {
     updatedAt: new Date().toISOString(),
   };
 
-  store.events.push(duplicated);
+  await saveEvent(duplicated);
 
   return NextResponse.json({
     success: true,

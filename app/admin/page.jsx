@@ -124,6 +124,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("posters"); // "posters" | "guide" | "content" | "stickers" | "supabase"
   const [siteContent, setSiteContent] = useState(null);
   const [allStickers, setAllStickers] = useState([]);
+  const [supabaseStatus, setSupabaseStatus] = useState(null);
+  const [checkingSupabase, setCheckingSupabase] = useState(false);
 
   // Poster Form State
   const [form, setForm] = useState(blankEvent);
@@ -174,6 +176,24 @@ export default function AdminPage() {
     setDashboard(dashboardData.data);
     setSiteContent(contentData.data);
     setAllStickers(stickersData.data || []);
+    request("/admin/supabase-status", activeToken)
+      .then((res) => setSupabaseStatus(res.data))
+      .catch(() => {});
+  }
+
+  async function checkSupabaseStatus(activeToken = token) {
+    setCheckingSupabase(true);
+    try {
+      const res = await request("/admin/supabase-status", activeToken);
+      setSupabaseStatus(res.data);
+      if (res.data?.connected) {
+        notify("Supabase PostgreSQL terhubung!");
+      }
+    } catch (err) {
+      setSupabaseStatus({ connected: false, configured: false, message: err.message });
+    } finally {
+      setCheckingSupabase(false);
+    }
   }
 
   useEffect(() => {
@@ -1049,36 +1069,97 @@ export default function AdminPage() {
         {/* TAB 5: SUPABASE & UPSTASH GUIDE */}
         {activeTab === "supabase" && (
           <section className="admin-panel-card">
-            <span className="admin-eyebrow">ARSITEKTUR CLOUD & PRODUKSI</span>
-            <h3>Panduan Integrasi Supabase & Upstash Redis</h3>
-            <p style={{ font: "500 12px 'DM Mono'", lineHeight: 1.5, maxWidth: "780px", marginBottom: "22px" }}>
-              Aplikasi Malang Fest ini dirancang dengan adapter fleksibel: saat berjalan di AI Studio, aplikasi menggunakan penyimpanan in-memory berkecepatan tinggi yang aman. Ketika Anda siap mendeploy ke <b>Vercel</b> dengan <b>Supabase</b> dan <b>Upstash Redis</b>, ikuti langkah berikut:
-            </p>
+            <span className="admin-eyebrow">ARSITEKTUR DATABASE CLOUD</span>
+            <h3>Status Koneksi Supabase & Penyimpanan Permanen</h3>
+
+            {/* LIVE CONNECTION STATUS CARD */}
+            <div style={{
+              background: supabaseStatus?.connected ? "#d1fae5" : "#fef3c7",
+              border: "2px solid var(--ink)",
+              boxShadow: "4px 4px 0 var(--ink)",
+              padding: "20px",
+              marginBottom: "24px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", marginBottom: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{
+                    display: "inline-block",
+                    width: "14px",
+                    height: "14px",
+                    borderRadius: "50%",
+                    background: supabaseStatus?.connected ? "#10b981" : "#f59e0b",
+                    border: "1.5px solid var(--ink)"
+                  }} />
+                  <b style={{ font: "800 16px 'Syne'" }}>
+                    {supabaseStatus?.connected
+                      ? "TERHUBUNG KE SUPABASE POSTGRESQL (AKTIF & PERMANEN)"
+                      : supabaseStatus?.configured
+                        ? "SUPABASE TERDETEKSI TAPI TABEL BELUM SIAP"
+                        : "SUPABASE BELUM TERHUBUNG (DATA MASIH IN-MEMORY / LOKAL)"}
+                  </b>
+                </div>
+                <button
+                  onClick={() => checkSupabaseStatus()}
+                  disabled={checkingSupabase}
+                  style={{
+                    background: "var(--ink)",
+                    color: "var(--paper)",
+                    border: "1.5px solid var(--ink)",
+                    font: "700 10px 'DM Mono'",
+                    padding: "8px 14px",
+                    cursor: "pointer"
+                  }}
+                >
+                  {checkingSupabase ? "Memeriksa..." : "🔄 Cek Status Koneksi Sekarang"}
+                </button>
+              </div>
+
+              <p style={{ font: "500 11px/1.5 'DM Mono'", margin: 0, color: "var(--ink)" }}>
+                {supabaseStatus?.message || "Menghubungi server untuk mendeteksi status Supabase..."}
+              </p>
+            </div>
+
+            {/* KENAPA REFRESH HILANG PENJELASAN */}
+            <div style={{ background: "#ffecf1", border: "1.5px solid var(--ink)", padding: "18px 20px", marginBottom: "22px" }}>
+              <h4 style={{ font: "800 15px 'Syne'", margin: "0 0 8px", color: "#9f1239" }}>
+                💡 Mengapa Data Bisa Hilang Saat Di-refresh di Vercel?
+              </h4>
+              <p style={{ font: "500 11px/1.6 'DM Mono'", margin: 0 }}>
+                Di <b>Vercel</b>, website berjalan di atas sistem <b>Serverless</b> (tanpa server fisik tetap). Jika Supabase belum terhubung atau skrip tabel belum dibuat, sistem akan mereset memori ke data awal setiap kali Anda me-refresh halaman. 
+                <br/>
+                <b>Solusinya sangat mudah:</b> Ikuti 3 langkah di bawah ini agar semua poster dan stiker Anda langsung tersimpan permanen di cloud PostgreSQL Supabase:
+              </p>
+            </div>
 
             <div style={{ background: "#fcf8f0", border: "1.5px solid var(--ink)", padding: "20px", marginBottom: "20px" }}>
-              <h4 style={{ font: "800 16px 'Syne'", margin: "0 0 10px" }}>1. Skrip SQL Supabase Siap Pakai</h4>
-              <p style={{ font: "500 11px 'DM Mono'", margin: "0 0 12px" }}>
-                Skrip SQL lengkap sudah disiapkan di file <code>/supabase-schema.sql</code> di root repositori. Skrip ini membuat tabel <code>events</code>, <code>stickers</code>, <code>site_content</code>, <code>admins</code>, indeks pencarian, dan aturan keamanan (Row Level Security).
+              <h4 style={{ font: "800 16px 'Syne'", margin: "0 0 10px" }}>Langkah 1: Jalankan Skrip SQL di Supabase (Wajib)</h4>
+              <p style={{ font: "500 11px/1.5 'DM Mono'", margin: "0 0 12px" }}>
+                File skrip database lengkap sudah dibuat otomatis di repositori dengan nama <code>supabase-schema.sql</code>.
               </p>
-              <div style={{ background: "#1e1c1a", color: "var(--paper)", padding: "14px", font: "500 11px 'DM Mono'", overflowX: "auto" }}>
-                <code>-- File telah dibuat di /supabase-schema.sql</code><br/>
-                <code>-- Buka Supabase Dashboard &gt; SQL Editor &gt; Salin & Jalankan</code>
+              <ol style={{ font: "500 11px/1.6 'DM Mono'", margin: "0 0 14px", paddingLeft: "20px" }}>
+                <li>Buka dashboard Supabase Anda di <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" style={{ textDecoration: "underline", fontWeight: 700 }}>supabase.com/dashboard</a>.</li>
+                <li>Pilih project Anda, lalu klik menu <b>SQL Editor</b> di sidebar kiri.</li>
+                <li>Klik tombol <b>New Query</b>.</li>
+                <li>Buka file <code>supabase-schema.sql</code> dari repositori ini, salin semua isinya, paste ke editor query Supabase, lalu klik <b>Run</b> (atau tekan Ctrl+Enter).</li>
+              </ol>
+              <div style={{ background: "#1e1c1a", color: "var(--paper)", padding: "12px 14px", font: "500 10px 'DM Mono'" }}>
+                ✓ Tabel <code>events</code>, <code>stickers</code>, <code>site_content</code>, dan <code>admins</code> akan otomatis dibuat lengkap dengan data awal.
               </div>
             </div>
 
             <div style={{ background: "#fcf8f0", border: "1.5px solid var(--ink)", padding: "20px" }}>
-              <h4 style={{ font: "800 16px 'Syne'", margin: "0 0 10px" }}>2. Konfigurasi Variabel Lingkungan di Vercel</h4>
+              <h4 style={{ font: "800 16px 'Syne'", margin: "0 0 10px" }}>Langkah 2: Masukkan Variabel di Vercel Settings</h4>
               <p style={{ font: "500 11px 'DM Mono'", margin: "0 0 12px" }}>
-                Di Vercel Dashboard project Anda (Settings &gt; Environment Variables), masukkan:
+                Di Vercel Dashboard project Anda (<b>Settings &gt; Environment Variables</b>), pastikan variabel berikut terisi:
               </p>
-              <div style={{ background: "#1e1c1a", color: "var(--paper)", padding: "14px", font: "500 11px 'DM Mono'", lineHeight: 1.6 }}>
-                <div>NEXT_PUBLIC_SUPABASE_URL=https://xyz.supabase.co</div>
-                <div>NEXT_PUBLIC_SUPABASE_ANON_KEY=ey...</div>
-                <div>SUPABASE_SERVICE_ROLE_KEY=ey...</div>
-                <div>UPSTASH_REDIS_REST_URL=https://...upstash.io</div>
-                <div>UPSTASH_REDIS_REST_TOKEN=...</div>
-                <div>JWT_SECRET=rahasia-jwt-malangfest-anda</div>
+              <div style={{ background: "#1e1c1a", color: "var(--paper)", padding: "14px", font: "500 11px 'DM Mono'", lineHeight: 1.8 }}>
+                <div>NEXT_PUBLIC_SUPABASE_URL=https://[project-id].supabase.co</div>
+                <div>SUPABASE_SERVICE_ROLE_KEY=ey... (didapat dari Supabase &gt; Project Settings &gt; API &gt; service_role)</div>
+                <div>JWT_SECRET=bebas_string_acak_rahasia_anda</div>
               </div>
+              <p style={{ font: "600 11px 'DM Mono'", margin: "14px 0 0", color: "#b45309" }}>
+                ⚠️ Catatan: Setelah memasukkan variabel di Vercel, klik <b>Deployments &gt; Redeploy</b> agar Vercel membaca variabel baru tersebut.
+              </p>
             </div>
           </section>
         )}

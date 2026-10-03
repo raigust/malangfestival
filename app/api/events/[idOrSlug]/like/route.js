@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { store, PUBLIC_STATUSES } from "@/lib/store";
+import { store, PUBLIC_STATUSES, saveEvent, ensureStoreLoaded } from "@/lib/store";
 
 export async function POST(_request, { params }) {
+  await ensureStoreLoaded();
   const { idOrSlug } = params;
   const isNumeric = /^\d+$/.test(idOrSlug);
   const numericId = isNumeric ? Number(idOrSlug) : null;
@@ -20,6 +21,7 @@ export async function POST(_request, { params }) {
 
   event.likesCount = (event.likesCount || 0) + 1;
   event.updatedAt = new Date().toISOString();
+  await saveEvent(event);
 
   return NextResponse.json({ success: true, likesCount: event.likesCount });
 }

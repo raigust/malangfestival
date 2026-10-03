@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { store, PUBLIC_STATUSES } from "@/lib/store";
+import { store, PUBLIC_STATUSES, addSticker, ensureStoreLoaded } from "@/lib/store";
 
 export async function POST(request, { params }) {
+  await ensureStoreLoaded();
   const { idOrSlug } = params;
   const isNumeric = /^\d+$/.test(idOrSlug);
   const numericId = isNumeric ? Number(idOrSlug) : null;
@@ -39,8 +40,7 @@ export async function POST(request, { params }) {
       createdAt: new Date().toISOString()
     };
 
-    if (!event.stickers) event.stickers = [];
-    event.stickers.unshift(sticker);
+    await addSticker(sticker);
     event.updatedAt = new Date().toISOString();
 
     return NextResponse.json(

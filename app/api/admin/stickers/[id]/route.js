@@ -1,24 +1,25 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store } from "@/lib/store";
+import { store, deleteSticker, ensureStoreLoaded } from "@/lib/store";
 
 export async function DELETE(request, { params }) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
 
+  await ensureStoreLoaded();
+
   const id = Number(params.id);
   let found = false;
 
-  store.events.forEach((ev) => {
+  for (const ev of store.events) {
     if (Array.isArray(ev.stickers)) {
       const idx = ev.stickers.findIndex((st) => st.id === id);
       if (idx !== -1) {
-        ev.stickers.splice(idx, 1);
-        ev.updatedAt = new Date().toISOString();
         found = true;
+        break;
       }
     }
-  });
+  }
 
   if (!found) {
     return NextResponse.json(
@@ -26,6 +27,8 @@ export async function DELETE(request, { params }) {
       { status: 404 }
     );
   }
+
+  await deleteSticker(id);
 
   return NextResponse.json({
     success: true,

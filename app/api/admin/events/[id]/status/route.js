@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { store, EVENT_STATUSES } from "@/lib/store";
+import { store, EVENT_STATUSES, saveEvent, ensureStoreLoaded } from "@/lib/store";
 
 export async function POST(request, { params }) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
+
+  await ensureStoreLoaded();
 
   const id = Number(params.id);
   const event = store.events.find((e) => e.id === id);
@@ -27,6 +29,8 @@ export async function POST(request, { params }) {
 
     event.status = status;
     event.updatedAt = new Date().toISOString();
+
+    await saveEvent(event);
 
     return NextResponse.json({
       success: true,
