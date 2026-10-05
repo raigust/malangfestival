@@ -21,6 +21,16 @@ const defaultContent = {
   manifestoText: "Malang Fest adalah mading digital untuk hal-hal yang membuat kota ini berbunyi, bergerak, dan berpikir.",
   footerTagline: "Bukan mesin tiket. Ini papan kabar untuk yang berkarya.",
   categories: defaultCategories,
+  audioTrack: {
+    enabled: true,
+    title: "Nocturne di Kayutangan (Akustik & Klasik Santai)",
+    artist: "Malang Classical & Heritage Ensemble",
+    type: "youtube",
+    url: "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+    youtubeId: "jfKfPfyJRdk",
+    autoplay: true,
+    volume: 50,
+  },
 };
 
 const fallbackEvents = [
@@ -309,8 +319,11 @@ export default function Home() {
       })
       .catch(() => {});
 
-    // Fetch dynamic site content
-    fetch(`${API_URL}/content`)
+    // Fetch dynamic site content (with cache-busting so audio & CMS updates are immediate)
+    fetch(`${API_URL}/content?_t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Content API"))))
       .then((payload) => {
         if (payload?.data) setContent(payload.data);

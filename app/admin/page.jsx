@@ -473,15 +473,53 @@ export default function AdminPage() {
     });
   }
 
-  function applyAudioPreset(preset) {
-    updateAudioFields({
+  async function saveAudioDirectly(customTrack) {
+    const payload = customTrack || siteContent?.audioTrack || {
+      enabled: true,
+      title: "Nocturne di Kayutangan",
+      artist: "Malang Classical Ensemble",
+      type: "youtube",
+      url: "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+      youtubeId: "jfKfPfyJRdk",
+      autoplay: true,
+      volume: 50,
+    };
+
+    setBusy(true);
+    try {
+      const res = await request("/admin/audio", token, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setSiteContent((curr) => ({
+        ...curr,
+        audioTrack: res.data,
+      }));
+      notify(res.message || "Pengaturan lagu berhasil disimpan!");
+    } catch (err) {
+      notify("Gagal menyimpan lagu: " + err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function applyAndSavePreset(preset) {
+    const newTrack = {
+      ...(siteContent?.audioTrack || {}),
       title: preset.title,
       artist: preset.artist,
       type: preset.type,
       url: preset.url,
       youtubeId: preset.youtubeId,
-    });
-    notify(`Lagu preset "${preset.title}" terpilih! Klik simpan di bawah.`);
+      enabled: true,
+    };
+    updateAudioFields(newTrack);
+    await saveAudioDirectly(newTrack);
+  }
+
+  function applyAudioPreset(preset) {
+    applyAndSavePreset(preset);
   }
 
   function toggleAdminAudioPreview() {
@@ -1175,39 +1213,69 @@ export default function AdminPage() {
 
             {/* PRESET LAGU CEPAT */}
             <div style={{ background: "#fcf8f0", border: "1.5px solid var(--ink)", padding: "20px", marginBottom: "26px" }}>
-              <span className="admin-eyebrow" style={{ color: "var(--pink)" }}>PILIHAN CEPAT (KLIK 1 KALI UNTUK PASANG)</span>
-              <h4 style={{ font: "800 15px 'Syne'", margin: "4px 0 12px" }}>Pilihan Lagu Nuansa Kota Malang & Mading Seni:</h4>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px" }}>
-                {audioPresets.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => applyAudioPreset(preset)}
-                    style={{
-                      background: "white",
-                      border: "1.5px solid var(--ink)",
-                      boxShadow: "2px 2px 0 var(--ink)",
-                      padding: "12px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                      transition: "all 0.1s"
-                    }}
-                  >
-                    <span style={{ background: "#FFE600", border: "1px solid var(--ink)", padding: "2px 6px", font: "700 8px 'DM Mono'", alignSelf: "flex-start" }}>
-                      {preset.badge}
-                    </span>
-                    <strong style={{ font: "800 12px 'Syne'", color: "var(--ink)" }}>{preset.title}</strong>
-                    <span style={{ font: "500 10px 'DM Mono'", color: "#666" }}>{preset.artist}</span>
-                  </button>
-                ))}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
+                <div>
+                  <span className="admin-eyebrow" style={{ color: "var(--pink)" }}>PILIHAN CEPAT (KLIK 1 KALI LANGSUNG AKTIF)</span>
+                  <h4 style={{ font: "800 15px 'Syne'", margin: "4px 0 0" }}>Pilihan Lagu Nuansa Kota Malang & Mading Seni:</h4>
+                </div>
+                <small style={{ font: "700 10px 'DM Mono'", color: "#008a3e" }}>
+                  ⚡ Klik tombol "Pasang Lagu Ini" langsung tersimpan otomatis & tayang di web!
+                </small>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "12px" }}>
+                {audioPresets.map((preset, idx) => {
+                  const isCurrent = siteContent.audioTrack?.youtubeId === preset.youtubeId;
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        background: isCurrent ? "#FFFFED" : "white",
+                        border: isCurrent ? "2.5px solid #00D664" : "1.5px solid var(--ink)",
+                        boxShadow: isCurrent ? "3px 3px 0 #00D664" : "2px 2px 0 var(--ink)",
+                        padding: "14px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ background: isCurrent ? "#00D664" : "#FFE600", color: isCurrent ? "#FFF" : "var(--ink)", border: "1px solid var(--ink)", padding: "2px 6px", font: "700 8px 'DM Mono'" }}>
+                          {isCurrent ? "✓ SEDANG DIPUTAR DI WEB" : preset.badge}
+                        </span>
+                      </div>
+                      <strong style={{ font: "800 13px 'Syne'", color: "var(--ink)" }}>{preset.title}</strong>
+                      <span style={{ font: "500 11px 'DM Mono'", color: "#666" }}>{preset.artist}</span>
+
+                      <button
+                        type="button"
+                        onClick={() => applyAndSavePreset(preset)}
+                        disabled={busy}
+                        style={{
+                          marginTop: "8px",
+                          background: isCurrent ? "#E2D9C8" : "#FFE600",
+                          color: "var(--ink)",
+                          border: "1.5px solid var(--ink)",
+                          boxShadow: "2px 2px 0 var(--ink)",
+                          font: "800 10px 'Syne'",
+                          padding: "8px 10px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        {isCurrent ? "✓ SEDANG AKTIF DI WEB" : "⚡ PASANG & AKTIFKAN LAGU INI"}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             {/* FORM CONFIG */}
-            <form onSubmit={saveSiteContent}>
+            <form onSubmit={(e) => { e.preventDefault(); saveAudioDirectly(); }}>
               <div className="cms-grid" style={{ marginBottom: "16px" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "10px", font: "700 12px 'DM Mono'", background: "#FFF", padding: "12px", border: "1.5px solid var(--ink)" }}>
                   <input
@@ -1260,19 +1328,30 @@ export default function AdminPage() {
                 <label>
                   {siteContent.audioTrack?.type === "audio_url" ? "URL FILE AUDIO (.MP3 / STREAM):" : "LINK VIDEO YOUTUBE ATAU YOUTUBE ID:"}
                 </label>
-                <input
-                  value={siteContent.audioTrack?.url || ""}
-                  placeholder={siteContent.audioTrack?.type === "audio_url" ? "https://domain.com/musik-lagu.mp3" : "https://www.youtube.com/watch?v=jfKfPfyJRdk atau ID video"}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    const ytId = extractYouTubeId(raw);
-                    updateAudioFields({
-                      url: raw,
-                      youtubeId: ytId || raw,
-                    });
-                  }}
-                  required
-                />
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    value={siteContent.audioTrack?.url || ""}
+                    placeholder={siteContent.audioTrack?.type === "audio_url" ? "https://domain.com/musik-lagu.mp3" : "https://www.youtube.com/watch?v=jfKfPfyJRdk atau ID video"}
+                    style={{ flex: 1 }}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const ytId = extractYouTubeId(raw);
+                      updateAudioFields({
+                        url: raw,
+                        youtubeId: ytId || raw,
+                      });
+                    }}
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="admin-primary"
+                    disabled={busy}
+                    style={{ whiteSpace: "nowrap" }}
+                  >
+                    💾 SIMPAN LAGU
+                  </button>
+                </div>
                 {siteContent.audioTrack?.type !== "audio_url" && (
                   <small style={{ font: "500 10px 'DM Mono'", color: "#777", marginTop: "4px", display: "block" }}>
                     ✓ Masukkan link lengkap (misal: <code>https://youtu.be/xxx</code>) atau 11 digit kode video YouTube.

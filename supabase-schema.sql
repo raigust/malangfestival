@@ -119,38 +119,46 @@ ALTER TABLE public.site_content ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Publik boleh membaca event yang statusnya UPCOMING / PUBLISHED
+DROP POLICY IF EXISTS "Public can view published events" ON public.events;
 CREATE POLICY "Public can view published events"
 ON public.events FOR SELECT
 USING (status IN ('UPCOMING', 'PUBLISHED'));
 
 -- Policy: Publik boleh membaca semua stiker
+DROP POLICY IF EXISTS "Public can view stickers" ON public.stickers;
 CREATE POLICY "Public can view stickers"
 ON public.stickers FOR SELECT
 USING (true);
 
 -- Policy: Publik boleh menempel stiker
+DROP POLICY IF EXISTS "Public can create stickers" ON public.stickers;
 CREATE POLICY "Public can create stickers"
 ON public.stickers FOR INSERT
 WITH CHECK (true);
 
 -- Policy: Publik boleh membaca konten website
+DROP POLICY IF EXISTS "Public can view site content" ON public.site_content;
 CREATE POLICY "Public can view site content"
 ON public.site_content FOR SELECT
 USING (true);
 
 -- Policy: Service role / backend memiliki akses penuh
+DROP POLICY IF EXISTS "Service role full access events" ON public.events;
 CREATE POLICY "Service role full access events"
 ON public.events FOR ALL
 USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access stickers" ON public.stickers;
 CREATE POLICY "Service role full access stickers"
 ON public.stickers FOR ALL
 USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access content" ON public.site_content;
 CREATE POLICY "Service role full access content"
 ON public.site_content FOR ALL
 USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access admins" ON public.admins;
 CREATE POLICY "Service role full access admins"
 ON public.admins FOR ALL
 USING (auth.role() = 'service_role');

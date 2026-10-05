@@ -141,15 +141,20 @@ export default function BackgroundPlayer({ audioConfig }) {
       {isYouTube ? (
         <div style={{ position: "fixed", width: "1px", height: "1px", opacity: 0.01, pointerEvents: "none", zIndex: -1, overflow: "hidden" }}>
           <iframe
+            key={ytVideoId}
             ref={ytIframeRef}
-            src={`https://www.youtube.com/embed/${ytVideoId}?enablejsapi=1&origin=${typeof window !== "undefined" ? window.location.origin : ""}&autoplay=0&loop=1&playlist=${ytVideoId}&controls=0`}
+            src={`https://www.youtube.com/embed/${ytVideoId}?enablejsapi=1&origin=${typeof window !== "undefined" ? window.location.origin : ""}&autoplay=${isPlaying ? 1 : 0}&loop=1&playlist=${ytVideoId}&controls=0`}
             title="Malang Fest Background Audio"
             allow="autoplay; encrypted-media"
-            onLoad={() => setPlayerReady(true)}
+            onLoad={() => {
+              setPlayerReady(true);
+              if (isPlaying) postYtCommand("playVideo");
+            }}
           />
         </div>
       ) : (
         <audio
+          key={config.url || "direct-audio"}
           ref={audioRef}
           src={config.url}
           loop

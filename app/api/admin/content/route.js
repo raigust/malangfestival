@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
 import { store, DEFAULT_SITE_CONTENT, saveContent, ensureStoreLoaded } from "@/lib/store";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request) {
   const { error } = getAuthenticatedAdmin(request);
   if (error) return error;
@@ -19,6 +22,7 @@ export async function PUT(request) {
   if (error) return error;
 
   try {
+    await ensureStoreLoaded();
     const body = await request.json();
     const current = store.siteContent || { ...DEFAULT_SITE_CONTENT };
 
