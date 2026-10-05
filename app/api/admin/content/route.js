@@ -37,6 +37,7 @@ export async function PUT(request) {
       "manifestoText",
       "footerTagline",
       "categories",
+      "audioTrack",
     ];
 
     allowedKeys.forEach((key) => {

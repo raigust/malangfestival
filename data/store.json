@@ -333,7 +333,17 @@
       "Tari & Budaya",
       "Pameran Seni & Rupa",
       "Seni Rupa"
-    ]
+    ],
+    "audioTrack": {
+      "enabled": true,
+      "title": "Nocturne di Kayutangan (Akustik & Klasik Santai)",
+      "artist": "Malang Classical & Heritage Ensemble",
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+      "youtubeId": "jfKfPfyJRdk",
+      "autoplay": true,
+      "volume": 50
+    }
   },
   "admin": {
     "id": 1,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import BackgroundPlayer from "@/components/BackgroundPlayer";
 
 const API_URL = "/api";
 
@@ -460,6 +461,7 @@ export default function Home() {
         <small>© 2026 MALANG FEST. DIBUAT DI MALANG DENGAN BANYAK RIUH.</small>
       </footer>
 
+      <BackgroundPlayer audioConfig={content?.audioTrack} />
       {notice && <div className="toast"><Icon name="spark" size={17}/>{notice}</div>}
       <EventModal event={selected} onClose={() => setSelected(null)} onClap={clap} onAddSticker={addSticker} />
       <CuratorStudio open={studioOpen} onClose={() => setStudioOpen(false)} />

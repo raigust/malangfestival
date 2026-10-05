@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { extractYouTubeId } from "@/components/BackgroundPlayer";
 
 const API_URL = "/api";
 const TOKEN_KEY = "malangfest_admin_token";
@@ -26,6 +27,41 @@ const blankEvent = {
   highlight: "",
   status: "DRAFT",
 };
+
+const audioPresets = [
+  {
+    title: "Nocturne di Kayutangan (Akustik & Klasik Santai)",
+    artist: "Malang Classical & Heritage Ensemble",
+    type: "youtube",
+    url: "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+    youtubeId: "jfKfPfyJRdk",
+    badge: "Indie Lofi & Santai",
+  },
+  {
+    title: "Gamelan Slendro & Degung Malangan Ambient",
+    artist: "Sanggar Karawitan Patih Gajayana",
+    type: "youtube",
+    url: "https://www.youtube.com/watch?v=5qap5aO4i9A",
+    youtubeId: "5qap5aO4i9A",
+    badge: "Tradisi & Spirit Suropati",
+  },
+  {
+    title: "Simfoni Suropati: String Quartet & Harpsichord",
+    artist: "Brawijaya Chamber Philharmonic",
+    type: "youtube",
+    url: "https://www.youtube.com/watch?v=M44Uv9yY8jM",
+    youtubeId: "M44Uv9yY8jM",
+    badge: "Opera & Megah",
+  },
+  {
+    title: "Malang Vintage Brass & Midnight Jazz",
+    artist: "Amphitheater TKBJ Big Band",
+    type: "youtube",
+    url: "https://www.youtube.com/watch?v=y7e-GC6oGhg",
+    youtubeId: "y7e-GC6oGhg",
+    badge: "Swing Jazz Ceria",
+  },
+];
 
 function dateForInput(value) {
   try {
@@ -54,6 +90,9 @@ function Icon({ name, size = 18 }) {
     text: <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>,
     tag: <><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r="1.5"/></>,
     database: <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>,
+    music: <><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></>,
+    play: <><polygon points="5 3 19 12 5 21 5 3"/></>,
+    pause: <><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icons[name] || icons.check}</svg>;
 }
@@ -126,6 +165,8 @@ export default function AdminPage() {
   const [allStickers, setAllStickers] = useState([]);
   const [supabaseStatus, setSupabaseStatus] = useState(null);
   const [checkingSupabase, setCheckingSupabase] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+  const previewIframeRef = useRef(null);
 
   // Poster Form State
   const [form, setForm] = useState(blankEvent);
@@ -387,6 +428,66 @@ export default function AdminPage() {
     }
   }
 
+  // Audio Backsound Management
+  function updateAudioField(field, value) {
+    setSiteContent((curr) => {
+      const currentAudio = curr?.audioTrack || {
+        enabled: true,
+        title: "Nocturne di Kayutangan",
+        artist: "Malang Classical Ensemble",
+        type: "youtube",
+        url: "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+        youtubeId: "jfKfPfyJRdk",
+        autoplay: true,
+        volume: 50,
+      };
+      return {
+        ...curr,
+        audioTrack: {
+          ...currentAudio,
+          [field]: value,
+        },
+      };
+    });
+  }
+
+  function updateAudioFields(fields) {
+    setSiteContent((curr) => {
+      const currentAudio = curr?.audioTrack || {
+        enabled: true,
+        title: "Nocturne di Kayutangan",
+        artist: "Malang Classical Ensemble",
+        type: "youtube",
+        url: "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+        youtubeId: "jfKfPfyJRdk",
+        autoplay: true,
+        volume: 50,
+      };
+      return {
+        ...curr,
+        audioTrack: {
+          ...currentAudio,
+          ...fields,
+        },
+      };
+    });
+  }
+
+  function applyAudioPreset(preset) {
+    updateAudioFields({
+      title: preset.title,
+      artist: preset.artist,
+      type: preset.type,
+      url: preset.url,
+      youtubeId: preset.youtubeId,
+    });
+    notify(`Lagu preset "${preset.title}" terpilih! Klik simpan di bawah.`);
+  }
+
+  function toggleAdminAudioPreview() {
+    setPreviewPlaying((prev) => !prev);
+  }
+
   // Sticker Moderation
   async function removeSticker(stickerId) {
     if (!window.confirm("Hapus / moderasi stiker ini dari poster?")) return;
@@ -452,6 +553,9 @@ export default function AdminPage() {
           <button className={activeTab === "content" ? "active" : ""} onClick={() => setActiveTab("content")} type="button">
             <Icon name="text"/> Kelola Konten Web (CMS)
           </button>
+          <button className={activeTab === "audio" ? "active" : ""} onClick={() => setActiveTab("audio")} type="button">
+            <Icon name="music"/> Backsound Musik ({siteContent?.audioTrack?.enabled !== false ? "Aktif" : "Mati"})
+          </button>
           <button className={activeTab === "stickers" ? "active" : ""} onClick={() => setActiveTab("stickers")} type="button">
             <Icon name="tag"/> Moderasi Stiker ({allStickers.length})
           </button>
@@ -497,6 +601,9 @@ export default function AdminPage() {
           </button>
           <button className={`admin-tab-btn ${activeTab === "content" ? "active" : ""}`} onClick={() => setActiveTab("content")}>
             <Icon name="text" size={15}/> Kelola Konten Mading (CMS)
+          </button>
+          <button className={`admin-tab-btn ${activeTab === "audio" ? "active" : ""}`} onClick={() => setActiveTab("audio")}>
+            <Icon name="music" size={15}/> Backsound Lagu Mading
           </button>
           <button className={`admin-tab-btn ${activeTab === "stickers" ? "active" : ""}`} onClick={() => setActiveTab("stickers")}>
             <Icon name="tag" size={15}/> Stiker & Apresiasi ({allStickers.length})
@@ -974,6 +1081,251 @@ export default function AdminPage() {
                 </button>
                 <button type="button" onClick={resetSiteContent} className="admin-plain-button" style={{ background: "#ffced9" }}>
                   RESET KE STANDAR BAWAAN
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {/* TAB: BACKSOUND / RADIO MADING */}
+        {activeTab === "audio" && siteContent && (
+          <section className="admin-panel-card">
+            <span className="admin-eyebrow">ATMOSFER & BUNYI MADING · MALANG FEST</span>
+            <h3>Pengaturan Musik & Backsound Website</h3>
+            <p style={{ font: "500 12px 'DM Mono'", marginBottom: "22px", color: "#544e45" }}>
+              Tentukan lagu latar yang menemani pengunjung saat menjelajahi poster seni dan konser. Dukungan tautan YouTube maupun link audio langsung (.mp3). Perubahan langsung tersimpan ke cloud dan aktif di web publik.
+            </p>
+
+            {/* LIVE PREVIEW & PLAYER STATUS */}
+            <div style={{
+              background: "#FFFDF8",
+              border: "2px solid var(--ink)",
+              boxShadow: "4px 4px 0 var(--ink)",
+              padding: "20px",
+              marginBottom: "28px"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{
+                    display: "inline-block",
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    background: siteContent.audioTrack?.enabled !== false ? "#00D664" : "#FF4365",
+                    border: "1.5px solid var(--ink)"
+                  }} />
+                  <b style={{ font: "800 15px 'Syne'" }}>
+                    STATUS RADIO: {siteContent.audioTrack?.enabled !== false ? "AKTIF (BERBUNYI DI WEB PUBLIK)" : "NONAKTIF (SENYAP)"}
+                  </b>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={toggleAdminAudioPreview}
+                  style={{
+                    background: previewPlaying ? "#FF4365" : "#FFE600",
+                    color: previewPlaying ? "#FFF" : "var(--ink)",
+                    border: "2px solid var(--ink)",
+                    boxShadow: "2px 2px 0 var(--ink)",
+                    font: "800 11px 'Syne'",
+                    padding: "8px 16px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <Icon name={previewPlaying ? "pause" : "play"} size={14}/>
+                  {previewPlaying ? "JEDA TES AUDIO" : "▶ TES DENGARKAN DI SINI"}
+                </button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", background: "#F4EFE6", padding: "12px 16px", border: "1.5px solid var(--ink)" }}>
+                <span style={{ fontSize: "28px", animation: previewPlaying ? "mfVinylSpin 3s linear infinite" : "none", display: "inline-block" }}>
+                  💿
+                </span>
+                <div>
+                  <b style={{ font: "800 13px 'Syne'", display: "block" }}>
+                    {siteContent.audioTrack?.title || "Belum ada judul"}
+                  </b>
+                  <span style={{ font: "500 11px 'DM Mono'", color: "#665f57" }}>
+                    Artis: {siteContent.audioTrack?.artist || "Tidak ditentukan"} · Tipe: {siteContent.audioTrack?.type === "audio_url" ? "File Audio Langsung" : "Streaming YouTube"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Live Preview Embed */}
+              {previewPlaying && (
+                <div style={{ marginTop: "14px", border: "2px solid var(--ink)", background: "#1E1C1A", padding: "10px" }}>
+                  <span style={{ font: "700 10px 'DM Mono'", color: "#FFE600", display: "block", marginBottom: "8px" }}>
+                    ♫ PEMUTAR UJI AUDIO (YOUTUBE / STREAM):
+                  </span>
+                  <iframe
+                    ref={previewIframeRef}
+                    width="100%"
+                    height="160"
+                    src={`https://www.youtube.com/embed/${extractYouTubeId(siteContent.audioTrack?.youtubeId || siteContent.audioTrack?.url || "jfKfPfyJRdk")}?autoplay=1&controls=1`}
+                    title="Pratinjau Backsound YouTube"
+                    allow="autoplay; encrypted-media"
+                    style={{ border: "none" }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* PRESET LAGU CEPAT */}
+            <div style={{ background: "#fcf8f0", border: "1.5px solid var(--ink)", padding: "20px", marginBottom: "26px" }}>
+              <span className="admin-eyebrow" style={{ color: "var(--pink)" }}>PILIHAN CEPAT (KLIK 1 KALI UNTUK PASANG)</span>
+              <h4 style={{ font: "800 15px 'Syne'", margin: "4px 0 12px" }}>Pilihan Lagu Nuansa Kota Malang & Mading Seni:</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px" }}>
+                {audioPresets.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => applyAudioPreset(preset)}
+                    style={{
+                      background: "white",
+                      border: "1.5px solid var(--ink)",
+                      boxShadow: "2px 2px 0 var(--ink)",
+                      padding: "12px",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      transition: "all 0.1s"
+                    }}
+                  >
+                    <span style={{ background: "#FFE600", border: "1px solid var(--ink)", padding: "2px 6px", font: "700 8px 'DM Mono'", alignSelf: "flex-start" }}>
+                      {preset.badge}
+                    </span>
+                    <strong style={{ font: "800 12px 'Syne'", color: "var(--ink)" }}>{preset.title}</strong>
+                    <span style={{ font: "500 10px 'DM Mono'", color: "#666" }}>{preset.artist}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* FORM CONFIG */}
+            <form onSubmit={saveSiteContent}>
+              <div className="cms-grid" style={{ marginBottom: "16px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", font: "700 12px 'DM Mono'", background: "#FFF", padding: "12px", border: "1.5px solid var(--ink)" }}>
+                  <input
+                    type="checkbox"
+                    checked={siteContent.audioTrack?.enabled !== false}
+                    onChange={(e) => updateAudioField("enabled", e.target.checked)}
+                    style={{ width: "18px", height: "18px" }}
+                  />
+                  Aktifkan Pemutar Backsound di Mading Publik
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", font: "700 12px 'DM Mono'", background: "#FFF", padding: "12px", border: "1.5px solid var(--ink)" }}>
+                  <input
+                    type="checkbox"
+                    checked={siteContent.audioTrack?.autoplay !== false}
+                    onChange={(e) => updateAudioField("autoplay", e.target.checked)}
+                    style={{ width: "18px", height: "18px" }}
+                  />
+                  Mulai Putar Otomatis saat pengunjung klik pertama kali
+                </label>
+              </div>
+
+              <div className="cms-group">
+                <label>TIPE SUMBER SUARA:</label>
+                <div style={{ display: "flex", gap: "16px", marginTop: "6px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", font: "700 11px 'DM Mono'" }}>
+                    <input
+                      type="radio"
+                      name="audioType"
+                      value="youtube"
+                      checked={siteContent.audioTrack?.type !== "audio_url"}
+                      onChange={() => updateAudioField("type", "youtube")}
+                    />
+                    Tautan YouTube (Otomatis streaming suara dari video)
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", font: "700 11px 'DM Mono'" }}>
+                    <input
+                      type="radio"
+                      name="audioType"
+                      value="audio_url"
+                      checked={siteContent.audioTrack?.type === "audio_url"}
+                      onChange={() => updateAudioField("type", "audio_url")}
+                    />
+                    File Audio Langsung (.mp3 / URL stream)
+                  </label>
+                </div>
+              </div>
+
+              <div className="cms-group">
+                <label>
+                  {siteContent.audioTrack?.type === "audio_url" ? "URL FILE AUDIO (.MP3 / STREAM):" : "LINK VIDEO YOUTUBE ATAU YOUTUBE ID:"}
+                </label>
+                <input
+                  value={siteContent.audioTrack?.url || ""}
+                  placeholder={siteContent.audioTrack?.type === "audio_url" ? "https://domain.com/musik-lagu.mp3" : "https://www.youtube.com/watch?v=jfKfPfyJRdk atau ID video"}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const ytId = extractYouTubeId(raw);
+                    updateAudioFields({
+                      url: raw,
+                      youtubeId: ytId || raw,
+                    });
+                  }}
+                  required
+                />
+                {siteContent.audioTrack?.type !== "audio_url" && (
+                  <small style={{ font: "500 10px 'DM Mono'", color: "#777", marginTop: "4px", display: "block" }}>
+                    ✓ Masukkan link lengkap (misal: <code>https://youtu.be/xxx</code>) atau 11 digit kode video YouTube.
+                    {siteContent.audioTrack?.youtubeId && (
+                      <span style={{ color: "#008a3e", fontWeight: 700, marginLeft: "8px" }}>
+                        [Terdeteksi ID: {extractYouTubeId(siteContent.audioTrack.youtubeId)}]
+                      </span>
+                    )}
+                  </small>
+                )}
+              </div>
+
+              <div className="cms-grid">
+                <div className="cms-group">
+                  <label>JUDUL LAGU (DITAMPILKAN DI PEMUTAR MADING):</label>
+                  <input
+                    value={siteContent.audioTrack?.title || ""}
+                    placeholder="Contoh: Nocturne di Kayutangan"
+                    onChange={(e) => updateAudioField("title", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="cms-group">
+                  <label>NAMA ARTIS / PENYANYI / MUSISI:</label>
+                  <input
+                    value={siteContent.audioTrack?.artist || ""}
+                    placeholder="Contoh: Malang Classical & Heritage Ensemble"
+                    onChange={(e) => updateAudioField("artist", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="cms-group">
+                <label>VOLUME DEFAULT ({siteContent.audioTrack?.volume ?? 50}%):</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={siteContent.audioTrack?.volume ?? 50}
+                    onChange={(e) => updateAudioField("volume", Number(e.target.value))}
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ font: "700 12px 'DM Mono'", minWidth: "45px" }}>
+                    {siteContent.audioTrack?.volume ?? 50}%
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+                <button type="submit" className="admin-primary" disabled={busy}>
+                  <Icon name="check" size={16}/> SIMPAN PENGATURAN MUSIK MADING
                 </button>
               </div>
             </form>
