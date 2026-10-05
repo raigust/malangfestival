@@ -1,21 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { extractYouTubeId } from "@/lib/audio";
 
-export function extractYouTubeId(urlOrId) {
-  if (!urlOrId) return "";
-  const trimmed = urlOrId.trim();
-  // If it's already an 11-char ID
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-    return trimmed;
-  }
-  // Standard youtube watch URL
-  const matchWatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (matchWatch && matchWatch[1]) {
-    return matchWatch[1];
-  }
-  return "";
-}
+export { extractYouTubeId };
 
 export default function BackgroundPlayer({ audioConfig }) {
   const [isPlaying, setIsPlaying] = useState(false);

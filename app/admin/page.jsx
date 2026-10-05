@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { extractYouTubeId } from "@/components/BackgroundPlayer";
+import { extractYouTubeId } from "@/lib/audio";
 
 const API_URL = "/api";
 const TOKEN_KEY = "malangfest_admin_token";

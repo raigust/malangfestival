@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth";
 import { saveAudioTrack, store, DEFAULT_SITE_CONTENT, ensureStoreLoaded } from "@/lib/store";
-import { extractYouTubeId } from "@/components/BackgroundPlayer";
+import { extractYouTubeId } from "@/lib/audio";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
